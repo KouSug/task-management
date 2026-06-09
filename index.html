@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>動画編集タスク管理</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- Phosphor Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <!-- Google Identity Services -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+  </head>
+  <body>
+    <div id="app">
+      <header class="app-header">
+        <div class="logo">
+          <i class="ph ph-video-camera"></i>
+          <h1>Video Tasks</h1>
+        </div>
+        <div class="auth-section">
+          <button id="btn-login" class="btn btn-primary" style="display: none;">
+            <i class="ph ph-google-logo"></i> Googleでログイン
+          </button>
+          <div id="user-info" class="user-info" style="display: none;">
+            <span id="user-name"></span>
+            <button id="btn-logout" class="btn btn-icon" title="ログアウト">
+              <i class="ph ph-sign-out"></i>
+            </button>
+          </div>
+        </div>
+      </header>
+      
+      <main class="board-container" id="board-container">
+        <!-- Columns will be injected here by JS -->
+      </main>
+
+      <button id="btn-add-task" class="fab" title="タスクを追加">
+        <i class="ph ph-plus"></i>
+      </button>
+
+      <!-- Task Modal -->
+      <div id="task-modal" class="modal-overlay" style="display: none;">
+        <div class="modal">
+          <div class="modal-header">
+            <h2 id="modal-title">タスクを追加</h2>
+            <button type="button" class="btn-close" id="btn-close-modal"><i class="ph ph-x"></i></button>
+          </div>
+          <form id="task-form">
+            <input type="hidden" id="task-id">
+            <div class="form-group">
+              <label for="task-title">案件名 / タイトル *</label>
+              <input type="text" id="task-title" required placeholder="例: 企業VP 〇〇様向け">
+            </div>
+            <div class="form-group">
+              <label for="task-client">クライアント</label>
+              <input type="text" id="task-client" placeholder="例: 株式会社〇〇">
+            </div>
+            <div class="form-group-row">
+              <div class="form-group">
+                <label for="task-deadline">納期</label>
+                <input type="date" id="task-deadline">
+              </div>
+              <div class="form-group">
+                <label for="task-status">ステータス</label>
+                <select id="task-status">
+                  <option value="todo">未着手</option>
+                  <option value="rough">初稿作成中</option>
+                  <option value="review">確認待ち</option>
+                  <option value="revision">修正対応中</option>
+                  <option value="done">納品完了</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="task-link">素材・参照リンク</label>
+              <input type="url" id="task-link" placeholder="https://drive.google.com/...">
+            </div>
+            <div class="form-group">
+              <label for="task-notes">備考</label>
+              <textarea id="task-notes" rows="3" placeholder="テロップの指定や要望など"></textarea>
+            </div>
+            <div class="modal-footer">
+              <button type="button" id="btn-delete-task" class="btn btn-danger" style="display: none;">削除</button>
+              <div class="spacer"></div>
+              <button type="button" id="btn-cancel" class="btn btn-secondary">キャンセル</button>
+              <button type="submit" class="btn btn-primary">保存</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Toast Notification -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

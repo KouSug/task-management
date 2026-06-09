@@ -1,0 +1,39 @@
+# Project Context
+This is a task management web application specifically designed for video editing workflows.
+The application features a Kanban board interface to track tasks through various stages of production.
+
+# Tech Stack
+- Build Tool: Vite
+- Frontend: Vanilla JavaScript, HTML5
+- Styling: Vanilla CSS (Custom styling, NO TailwindCSS)
+- Icons: Phosphor Icons (via CDN)
+- Authentication & Data Storage: Google Identity Services (OAuth2) & Google Drive REST API v3
+
+# Architecture & Features
+- **Client-Side Only**: The app runs entirely in the browser without a custom backend.
+- **Data Persistence**: Task data is stored directly in the user's Google Drive as a JSON file (`video_editing_tasks.json`).
+- **Drag & Drop**: Native HTML5 Drag and Drop API is used for moving tasks across columns.
+- **Authentication**: Uses Google Identity Services (`google.accounts.oauth2.initTokenClient`) to obtain an access token.
+- **API Scope**: Requires `https://www.googleapis.com/auth/drive.file` scope to read/write the app-created JSON file.
+
+# Styling Rules & UI/UX
+- **Design Concept**: Professional, premium dark mode design that harmonizes with professional video editing software interfaces (e.g., Premiere Pro, DaVinci Resolve).
+- **Colors**:
+  - Base Background: `#0f1115`
+  - Panel/Modal Background: `#1a1d24`
+  - Card Background: `#252932`
+  - Primary Accent: `#6366f1` (Indigo)
+- **Status Columns**:
+  - `todo` (未着手)
+  - `rough` (初稿作成中)
+  - `review` (確認待ち)
+  - `revision` (修正対応中)
+  - `done` (納品完了)
+- **Task Deadlines**: 
+  - Tasks must visually indicate proximity to deadlines using badges and colors (e.g., Warning if within 3 days, Danger if overdue). 
+  - Tasks in columns are automatically sorted by deadline ascending.
+
+# Development Guidelines
+- Always use Vanilla CSS and JavaScript. Do not introduce frameworks like React or CSS libraries like TailwindCSS unless explicitly requested and justified.
+- Avoid inline styles where possible; use CSS classes and CSS variables (`var(--...)`).
+- Maintain a clean `src/main.js` by logically grouping state management, authentication, drive syncing, UI rendering, and event handling functions.
