@@ -740,6 +740,7 @@ select option {
   padding: 8px 0;
   background-color: var(--bg-panel);
   border-radius: var(--radius-sm);
+  min-width: 0;
 }
 
 .calendar-grid-header div:first-child {
@@ -780,6 +781,7 @@ select option {
   border: 1px solid transparent;
   transition: background-color 0.2s, border-color 0.2s;
   min-height: 100px;
+  min-width: 0;
 }
 
 .calendar-day.different-month {
