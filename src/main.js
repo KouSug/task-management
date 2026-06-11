@@ -184,10 +184,13 @@ async function syncWithDrive() {
         headers: { 'Authorization': `Bearer ${accessToken}` }
       });
       
-      if (folderSearchRes.status === 401) {
-        handleLogout();
-        showToast('セッションが切れました。再度ログインしてください。', 'error');
-        return;
+      if (!folderSearchRes.ok) {
+        if (folderSearchRes.status === 401 || folderSearchRes.status === 403) {
+          handleLogout();
+          showToast('Google Driveのアクセス権限がありません。再度ログインし、Driveへのアクセスを許可してください。', 'error');
+          return;
+        }
+        throw new Error('Failed to search folder');
       }
       
       const folderData = await folderSearchRes.json();
@@ -216,6 +219,9 @@ async function syncWithDrive() {
         headers: { 'Authorization': `Bearer ${accessToken}` }
       });
       
+      if (!searchRes.ok) {
+        throw new Error('Failed to search file');
+      }
       const searchData = await searchRes.json();
       
       if (searchData.files && searchData.files.length > 0) {
@@ -240,8 +246,14 @@ async function loadTasksFromDrive() {
     });
     
     if (res.ok) {
-      const data = await res.json();
-      tasks = Array.isArray(data) ? data : [];
+      const text = await res.text();
+      try {
+        const data = text ? JSON.parse(text) : [];
+        tasks = Array.isArray(data) ? data : [];
+      } catch (e) {
+        console.error('Invalid JSON:', e);
+        tasks = [];
+      }
       renderCurrentView();
       showToast('データを読み込みました');
     }
