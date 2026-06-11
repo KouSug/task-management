@@ -3,7 +3,8 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>動画編集タスク管理</title>
+    <title>Task Manager</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256'><rect width='256' height='256' fill='none'/><polyline points='172 104 113.33 160 84 132' fill='none' stroke='%236366f1' stroke-linecap='round' stroke-linejoin='round' stroke-width='24'/><rect x='40' y='40' width='176' height='176' rx='8' fill='none' stroke='%236366f1' stroke-linecap='round' stroke-linejoin='round' stroke-width='24'/></svg>" type="image/svg+xml">
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -12,14 +13,29 @@
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <!-- Google Identity Services -->
     <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <!-- Flatpickr (Calendar) -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/dark.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/ja.js"></script>
   </head>
   <body>
     <div id="app">
       <header class="app-header">
         <div class="logo">
-          <i class="ph ph-video-camera"></i>
-          <h1>Video Tasks</h1>
+          <i class="ph ph-check-square"></i>
+          <h1>Task Manager</h1>
         </div>
+        
+        <div class="view-switcher" id="view-switcher">
+          <button class="btn-view active" data-view="kanban" title="カンバン表示">
+            <i class="ph ph-kanban"></i>
+          </button>
+          <button class="btn-view" data-view="table" title="リスト表示">
+            <i class="ph ph-list-dashes"></i>
+          </button>
+        </div>
+
         <div class="auth-section">
           <button id="btn-login" class="btn btn-primary" style="display: none;">
             <i class="ph ph-google-logo"></i> Googleでログイン
@@ -33,8 +49,42 @@
         </div>
       </header>
       
+      <div class="toolbar" id="toolbar" style="display: none;">
+        <div class="search-input-wrapper">
+          <i class="ph ph-magnifying-glass"></i>
+          <input type="text" id="filter-text" placeholder="タスク名やクライアントで検索...">
+        </div>
+        <div class="status-filter-wrapper">
+          <select id="filter-status">
+            <option value="all">すべてのステータス</option>
+            <option value="todo">未着手</option>
+            <option value="rough">初稿作成中</option>
+            <option value="review">確認待ち</option>
+            <option value="revision">修正対応中</option>
+            <option value="done">納品完了</option>
+          </select>
+        </div>
+      </div>
+      
       <main class="board-container" id="board-container">
         <!-- Columns will be injected here by JS -->
+      </main>
+
+      <main class="table-container" id="table-container" style="display: none;">
+        <table class="task-table">
+          <thead>
+            <tr>
+              <th style="width: 15%" class="sortable" data-sort="status">ステータス <i class="ph ph-caret-down sort-icon"></i></th>
+              <th style="width: 35%" class="sortable" data-sort="title">案件名 / タイトル <i class="ph ph-caret-down sort-icon"></i></th>
+              <th style="width: 20%" class="sortable" data-sort="client">クライアント <i class="ph ph-caret-down sort-icon"></i></th>
+              <th style="width: 15%" class="sortable" data-sort="deadline">納期 <i class="ph ph-caret-down sort-icon"></i></th>
+              <th style="width: 15%">リンク・備考</th>
+            </tr>
+          </thead>
+          <tbody id="table-body">
+            <!-- Rows will be injected here by JS -->
+          </tbody>
+        </table>
       </main>
 
       <button id="btn-add-task" class="fab" title="タスクを追加">
@@ -61,7 +111,7 @@
             <div class="form-group-row">
               <div class="form-group">
                 <label for="task-deadline">納期</label>
-                <input type="date" id="task-deadline">
+                <input type="text" id="task-deadline" placeholder="日付を選択">
               </div>
               <div class="form-group">
                 <label for="task-status">ステータス</label>

@@ -1,17 +1,21 @@
 # Project Context
-This is a task management web application specifically designed for video editing workflows.
-The application features a Kanban board interface to track tasks through various stages of production.
+This is a general-purpose task management web application.
+The application features a Kanban board interface and a sortable/filterable Table (List) view to track tasks through various stages of production.
 
 # Tech Stack
 - Build Tool: Vite
 - Frontend: Vanilla JavaScript, HTML5
 - Styling: Vanilla CSS (Custom styling, NO TailwindCSS)
 - Icons: Phosphor Icons (via CDN)
+- UI Components: Flatpickr (Calendar Datepicker for deadlines)
 - Authentication & Data Storage: Google Identity Services (OAuth2) & Google Drive REST API v3
 
 # Architecture & Features
 - **Client-Side Only**: The app runs entirely in the browser without a custom backend.
-- **Data Persistence**: Task data is stored directly in the user's Google Drive as a JSON file (`video_editing_tasks.json`).
+- **Data Persistence**: Task data is stored directly in the user's Google Drive. The app creates an `ApplicationData` folder in the root drive and stores data in a `taskData` file inside it.
+- **Views**: 
+  - Kanban View: Visual board. Auto-hides "done" tasks older than 7 days to maintain performance.
+  - Table View: List format with column-sorting and text/status filtering.
 - **Drag & Drop**: Native HTML5 Drag and Drop API is used for moving tasks across columns.
 - **Authentication**: Uses Google Identity Services (`google.accounts.oauth2.initTokenClient`) to obtain an access token.
 - **API Scope**: Requires `https://www.googleapis.com/auth/drive.file` scope to read/write the app-created JSON file.

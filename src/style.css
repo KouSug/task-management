@@ -522,7 +522,181 @@ select option {
   to { opacity: 0; display: none; }
 }
 
+/* View Switcher */
+.view-switcher {
+  display: flex;
+  background-color: rgba(0,0,0,0.2);
+  border-radius: var(--radius-md);
+  padding: 4px;
+  gap: 4px;
+}
+
+.btn-view {
+  background: transparent;
+  color: var(--text-secondary);
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  transition: all 0.2s;
+}
+
+.btn-view:hover {
+  color: var(--text-primary);
+}
+
+.btn-view.active {
+  background-color: var(--bg-card);
+  color: var(--accent-primary);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Table View */
+.table-container {
+  flex: 1;
+  overflow: auto;
+  padding: 24px;
+  background-color: var(--bg-base);
+  /* Scrollbar styling */
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.2) transparent;
+}
+
+.table-container::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.table-container::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.2);
+  border-radius: 4px;
+}
+
+.task-table {
+  width: 100%;
+  min-width: 800px;
+  border-collapse: collapse;
+  background-color: var(--bg-panel);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+
+.task-table th, .task-table td {
+  padding: 16px;
+  text-align: left;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+
+.task-table th {
+  background-color: rgba(0,0,0,0.2);
+  color: var(--text-secondary);
+  font-weight: 600;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.task-table th.sortable {
+  cursor: pointer;
+  user-select: none;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.task-table th.sortable:hover {
+  background-color: rgba(255,255,255,0.05);
+  color: var(--text-primary);
+}
+
+.sort-icon {
+  display: inline-block;
+  margin-left: 4px;
+  opacity: 0;
+  transition: transform 0.2s, opacity 0.2s;
+}
+
+.task-table th.sortable.active .sort-icon {
+  opacity: 1;
+  color: var(--accent-primary);
+}
+
+.task-table th.sortable.active.desc .sort-icon {
+  transform: rotate(180deg);
+}
+
+.task-table tr {
+  transition: background-color 0.2s;
+}
+
+.task-table tbody tr:hover {
+  background-color: var(--bg-card);
+  cursor: pointer;
+}
+
+.task-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.table-status-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 8px;
+}
+
+.table-title {
+  font-weight: 500;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+.table-client {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.table-actions {
+  display: flex;
+  gap: 12px;
+  color: var(--text-muted);
+}
+
 /* Utilities */
 .hidden {
   display: none !important;
+}
+
+/* Toolbar & Filters */
+.toolbar {
+  display: flex;
+  padding: 16px 24px 0;
+  gap: 16px;
+  align-items: center;
+}
+
+.search-input-wrapper {
+  position: relative;
+  flex: 1;
+  max-width: 320px;
+}
+
+.search-input-wrapper i {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+  font-size: 1.1rem;
+}
+
+.search-input-wrapper input {
+  padding-left: 36px;
+}
+
+.status-filter-wrapper {
+  max-width: 200px;
 }
