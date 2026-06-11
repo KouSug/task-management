@@ -80,7 +80,8 @@
               <th style="width: 15%" class="sortable" data-sort="status">ステータス <i class="ph ph-caret-down sort-icon"></i></th>
               <th style="width: 35%" class="sortable" data-sort="title">案件名 / タイトル <i class="ph ph-caret-down sort-icon"></i></th>
               <th style="width: 20%" class="sortable" data-sort="client">クライアント <i class="ph ph-caret-down sort-icon"></i></th>
-              <th style="width: 15%" class="sortable" data-sort="deadline">納期 <i class="ph ph-caret-down sort-icon"></i></th>
+              <th style="width: 12%" class="sortable" data-sort="deadline">納期 <i class="ph ph-caret-down sort-icon"></i></th>
+              <th style="width: 12%" class="sortable" data-sort="deliveredAt">納品完了日 <i class="ph ph-caret-down sort-icon"></i></th>
               <th style="width: 15%">リンク・備考</th>
             </tr>
           </thead>
@@ -96,6 +97,9 @@
           <button class="btn btn-icon" id="btn-prev-month" title="前月"><i class="ph ph-caret-left"></i></button>
           <h2 id="calendar-month-year">2026年 6月</h2>
           <button class="btn btn-icon" id="btn-next-month" title="次月"><i class="ph ph-caret-right"></i></button>
+        </div>
+        <div class="calendar-legend" id="calendar-legend">
+          <!-- Legend items will be injected here -->
         </div>
         <div class="calendar-grid-header">
           <div>日</div><div>月</div><div>火</div><div>水</div><div>木</div><div>金</div><div>土</div>
@@ -130,6 +134,10 @@
               <div class="form-group">
                 <label for="task-deadline">納期</label>
                 <input type="text" id="task-deadline" placeholder="日付を選択">
+              </div>
+              <div class="form-group">
+                <label for="task-delivered-at">納品完了日</label>
+                <input type="text" id="task-delivered-at" placeholder="未設定">
               </div>
               <div class="form-group">
                 <label for="task-status">ステータス</label>

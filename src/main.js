@@ -56,12 +56,27 @@ function init() {
   renderColumns();
   setupEventListeners();
   
-  // Initialize flatpickr for deadline
+  // Initialize flatpickr for deadline and delivered at
   if (window.flatpickr) {
     flatpickr('#task-deadline', {
       locale: 'ja',
       dateFormat: 'Y-m-d'
     });
+    flatpickr('#task-delivered-at', {
+      locale: 'ja',
+      dateFormat: 'Y-m-d'
+    });
+  }
+  
+  // Initialize calendar legend
+  const legendContainer = document.getElementById('calendar-legend');
+  if (legendContainer) {
+    legendContainer.innerHTML = COLUMNS.map(col => `
+      <div class="legend-item">
+        <span class="status-dot" style="background-color: ${col.color}"></span>
+        ${col.title}
+      </div>
+    `).join('');
   }
   
   // Load GIS
@@ -333,8 +348,8 @@ function renderBoard() {
   const visibleTasks = tasks.filter(task => {
     // Hide 'done' tasks older than 7 days in Kanban view
     if (task.status === 'done') {
-      const updatedTime = task.updatedAt ? new Date(task.updatedAt).getTime() : 0;
-      if (now.getTime() - updatedTime > SEVEN_DAYS_MS) {
+      const referenceTime = task.deliveredAt ? new Date(task.deliveredAt).getTime() : (task.updatedAt ? new Date(task.updatedAt).getTime() : 0);
+      if (now.getTime() - referenceTime > SEVEN_DAYS_MS) {
         return false;
       }
     }
@@ -466,6 +481,9 @@ function renderTable() {
     } else if (tableSort.key === 'deadline') {
       valA = a.deadline ? new Date(a.deadline).getTime() : null;
       valB = b.deadline ? new Date(b.deadline).getTime() : null;
+    } else if (tableSort.key === 'deliveredAt') {
+      valA = a.deliveredAt ? new Date(a.deliveredAt).getTime() : null;
+      valB = b.deliveredAt ? new Date(b.deliveredAt).getTime() : null;
     } else {
       valA = valA ? String(valA).toLowerCase() : '';
       valB = valB ? String(valB).toLowerCase() : '';
@@ -522,6 +540,12 @@ function renderTable() {
       `;
     }
     
+    let deliveredHtml = '-';
+    if (task.deliveredAt) {
+      const delDate = new Date(task.deliveredAt);
+      deliveredHtml = `<div class="task-deadline"><i class="ph ph-check-circle" style="color: var(--status-done);"></i> ${delDate.getMonth()+1}/${delDate.getDate()}</div>`;
+    }
+    
     let actionsHtml = '';
     if (task.link) {
       actionsHtml += `<a href="${task.link}" target="_blank" class="task-link" title="素材・参照リンク" onclick="event.stopPropagation()"><i class="ph ph-link"></i></a>`;
@@ -544,6 +568,7 @@ function renderTable() {
       </td>
       <td>${task.client ? `<div class="table-client">${escapeHtml(task.client)}</div>` : '-'}</td>
       <td>${deadlineHtml}</td>
+      <td>${deliveredHtml}</td>
       <td>
         <div class="table-actions">
           ${actionsHtml || '-'}
@@ -588,6 +613,12 @@ function moveTask(taskId, newStatus) {
   const taskIndex = tasks.findIndex(t => t.id === taskId);
   if (taskIndex !== -1 && tasks[taskIndex].status !== newStatus) {
     tasks[taskIndex].status = newStatus;
+    
+    // Auto-fill deliveredAt when moved to 'done'
+    if (newStatus === 'done' && !tasks[taskIndex].deliveredAt) {
+      tasks[taskIndex].deliveredAt = new Date().toLocaleDateString('en-CA');
+    }
+    
     tasks[taskIndex].updatedAt = new Date().toISOString();
     renderCurrentView();
     saveTasksToDrive();
@@ -605,6 +636,13 @@ function openModal(task = null) {
   deadlineInput.value = deadlineValue;
   if (deadlineInput._flatpickr) {
     deadlineInput._flatpickr.setDate(deadlineValue);
+  }
+  
+  const deliveredInput = document.getElementById('task-delivered-at');
+  const deliveredValue = task ? (task.deliveredAt || '') : '';
+  deliveredInput.value = deliveredValue;
+  if (deliveredInput._flatpickr) {
+    deliveredInput._flatpickr.setDate(deliveredValue);
   }
   
   document.getElementById('task-status').value = task ? task.status : 'todo';
@@ -632,6 +670,7 @@ function handleTaskSubmit(e) {
     title: document.getElementById('task-title').value,
     client: document.getElementById('task-client').value,
     deadline: document.getElementById('task-deadline').value,
+    deliveredAt: document.getElementById('task-delivered-at').value,
     status: document.getElementById('task-status').value,
     link: document.getElementById('task-link').value,
     notes: document.getElementById('task-notes').value,
@@ -835,8 +874,8 @@ function renderCalendar() {
       taskEl.className = 'calendar-task';
       taskEl.dataset.status = task.status;
       taskEl.draggable = true;
-      taskEl.textContent = task.title;
-      taskEl.title = task.title;
+      taskEl.innerHTML = task.title + (task.deliveredAt ? ' <i class="ph ph-check-circle" style="color: var(--status-done);"></i>' : '');
+      taskEl.title = task.title + (task.deliveredAt ? ' (納品済)' : '');
       
       taskEl.addEventListener('click', (e) => {
         e.stopPropagation();

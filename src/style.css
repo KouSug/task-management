@@ -725,6 +725,22 @@ select option {
   margin: 0;
 }
 
+.calendar-legend {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
 .calendar-grid-header {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
