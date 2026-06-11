@@ -2,7 +2,7 @@ import './style.css'
 
 // Configuration
 const CLIENT_ID = '797019706991-apjivfitf1u4pbfccaff5f8b331im9au.apps.googleusercontent.com';
-const SCOPES = 'https://www.googleapis.com/auth/drive.file';
+const SCOPES = 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/userinfo.profile';
 const FOLDER_NAME = 'ApplicationData';
 const FILE_NAME = 'taskData';
 
@@ -36,6 +36,7 @@ const btnLogin = document.getElementById('btn-login');
 const btnLogout = document.getElementById('btn-logout');
 const userInfoEl = document.getElementById('user-info');
 const userNameEl = document.getElementById('user-name');
+const userAvatarEl = document.getElementById('user-avatar');
 const btnAddTask = document.getElementById('btn-add-task');
 const toolbar = document.getElementById('toolbar');
 const filterText = document.getElementById('filter-text');
@@ -135,6 +136,7 @@ function handleLogout() {
       
       btnLogin.style.display = 'inline-flex';
       userInfoEl.style.display = 'none';
+      if (userAvatarEl) userAvatarEl.style.display = 'none';
       
       renderCurrentView();
       showToast('ログアウトしました');
@@ -148,6 +150,25 @@ async function onLoginSuccess() {
   userInfoEl.style.display = 'flex';
   
   userNameEl.textContent = 'Google Drive接続済';
+  
+  // Fetch user profile
+  try {
+    const res = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+      headers: { Authorization: `Bearer ${accessToken}` }
+    });
+    if (res.ok) {
+      const profile = await res.json();
+      if (profile.name) {
+        userNameEl.textContent = profile.name;
+      }
+      if (profile.picture && userAvatarEl) {
+        userAvatarEl.src = profile.picture;
+        userAvatarEl.style.display = 'block';
+      }
+    }
+  } catch (err) {
+    console.error('Failed to fetch user profile:', err);
+  }
   
   showToast('ログインしました。データを同期中...');
   await syncWithDrive();
