@@ -34,6 +34,9 @@
           <button class="btn-view" data-view="table" title="リスト表示">
             <i class="ph ph-list-dashes"></i>
           </button>
+          <button class="btn-view" data-view="calendar" title="カレンダー表示">
+            <i class="ph ph-calendar"></i>
+          </button>
         </div>
 
         <div class="auth-section">
@@ -85,6 +88,21 @@
             <!-- Rows will be injected here by JS -->
           </tbody>
         </table>
+      </main>
+
+      <!-- Calendar View -->
+      <main class="calendar-container" id="calendar-container" style="display: none;">
+        <div class="calendar-header">
+          <button class="btn btn-icon" id="btn-prev-month" title="前月"><i class="ph ph-caret-left"></i></button>
+          <h2 id="calendar-month-year">2026年 6月</h2>
+          <button class="btn btn-icon" id="btn-next-month" title="次月"><i class="ph ph-caret-right"></i></button>
+        </div>
+        <div class="calendar-grid-header">
+          <div>日</div><div>月</div><div>火</div><div>水</div><div>木</div><div>金</div><div>土</div>
+        </div>
+        <div class="calendar-grid" id="calendar-grid">
+          <!-- Calendar cells will be injected here -->
+        </div>
       </main>
 
       <button id="btn-add-task" class="fab" title="タスクを追加">

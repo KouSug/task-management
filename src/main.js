@@ -15,6 +15,7 @@ let userInfo = null;
 let currentView = 'kanban';
 let tableSort = { key: 'deadline', direction: 'asc' };
 let filterConfig = { text: '', status: 'all' };
+let currentCalendarDate = new Date();
 
 // Columns definition
 const COLUMNS = [
@@ -28,6 +29,7 @@ const COLUMNS = [
 // DOM Elements
 const boardContainer = document.getElementById('board-container');
 const tableContainer = document.getElementById('table-container');
+const calendarContainer = document.getElementById('calendar-container');
 const tableBody = document.getElementById('table-body');
 const btnViews = document.querySelectorAll('.btn-view');
 const btnLogin = document.getElementById('btn-login');
@@ -44,6 +46,10 @@ const btnCancel = document.getElementById('btn-cancel');
 const taskForm = document.getElementById('task-form');
 const btnDeleteTask = document.getElementById('btn-delete-task');
 const toastContainer = document.getElementById('toast-container');
+const calendarMonthYear = document.getElementById('calendar-month-year');
+const calendarGrid = document.getElementById('calendar-grid');
+const btnPrevMonth = document.getElementById('btn-prev-month');
+const btnNextMonth = document.getElementById('btn-next-month');
 
 // Initialize
 function init() {
@@ -282,10 +288,19 @@ function renderColumns() {
 }
 
 function renderCurrentView() {
+  boardContainer.style.display = 'none';
+  tableContainer.style.display = 'none';
+  calendarContainer.style.display = 'none';
+  
   if (currentView === 'kanban') {
+    boardContainer.style.display = 'flex';
     renderBoard();
-  } else {
+  } else if (currentView === 'table') {
+    tableContainer.style.display = 'block';
     renderTable();
+  } else if (currentView === 'calendar') {
+    calendarContainer.style.display = 'flex';
+    renderCalendar();
   }
 }
 
@@ -692,11 +707,18 @@ function setupEventListeners() {
       if (view === 'kanban') {
         boardContainer.style.display = 'flex';
         tableContainer.style.display = 'none';
+        calendarContainer.style.display = 'none';
         toolbar.style.display = 'none';
-      } else {
+      } else if (view === 'table') {
         boardContainer.style.display = 'none';
         tableContainer.style.display = 'block';
+        calendarContainer.style.display = 'none';
         toolbar.style.display = 'flex';
+      } else if (view === 'calendar') {
+        boardContainer.style.display = 'none';
+        tableContainer.style.display = 'none';
+        calendarContainer.style.display = 'flex';
+        toolbar.style.display = 'flex'; // Allow filtering in calendar? No, toolbar is text filter. Let's hide it for now.
       }
       
       renderCurrentView();
@@ -732,6 +754,144 @@ function setupEventListeners() {
       filterConfig.status = e.target.value;
       renderCurrentView();
     });
+  }
+  
+  if (btnPrevMonth) {
+    btnPrevMonth.addEventListener('click', () => {
+      currentCalendarDate.setMonth(currentCalendarDate.getMonth() - 1);
+      renderCalendar();
+    });
+  }
+  
+  if (btnNextMonth) {
+    btnNextMonth.addEventListener('click', () => {
+      currentCalendarDate.setMonth(currentCalendarDate.getMonth() + 1);
+      renderCalendar();
+    });
+  }
+}
+
+// Calendar Rendering & Logic
+function renderCalendar() {
+  calendarGrid.innerHTML = '';
+  
+  const year = currentCalendarDate.getFullYear();
+  const month = currentCalendarDate.getMonth();
+  
+  calendarMonthYear.textContent = `${year}年 ${month + 1}月`;
+  
+  const firstDay = new Date(year, month, 1).getDay(); // 0 (Sun) to 6 (Sat)
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const prevMonthDays = new Date(year, month, 0).getDate();
+  
+  const today = new Date();
+  const isCurrentMonth = today.getFullYear() === year && today.getMonth() === month;
+  
+  const filteredTasks = getFilteredTasks();
+  
+  // Total cells in a grid (usually 42 for a 6-week view)
+  const totalCells = Math.ceil((firstDay + daysInMonth) / 7) * 7;
+  
+  for (let i = 0; i < totalCells; i++) {
+    const cell = document.createElement('div');
+    cell.className = 'calendar-day';
+    
+    let cellDate;
+    let isCurrentMonthCell = false;
+    
+    if (i < firstDay) {
+      // Previous month dates
+      cellDate = new Date(year, month - 1, prevMonthDays - firstDay + i + 1);
+      cell.classList.add('different-month');
+    } else if (i >= firstDay && i < firstDay + daysInMonth) {
+      // Current month dates
+      cellDate = new Date(year, month, i - firstDay + 1);
+      isCurrentMonthCell = true;
+      if (isCurrentMonth && cellDate.getDate() === today.getDate()) {
+        cell.classList.add('today');
+      }
+    } else {
+      // Next month dates
+      cellDate = new Date(year, month + 1, i - firstDay - daysInMonth + 1);
+      cell.classList.add('different-month');
+    }
+    
+    // YYYY-MM-DD for matching tasks
+    const dateStr = cellDate.toLocaleDateString('en-CA'); // e.g. "2026-06-11"
+    cell.dataset.date = dateStr;
+    
+    // Add date number
+    const dateDiv = document.createElement('div');
+    dateDiv.className = 'calendar-date';
+    dateDiv.textContent = cellDate.getDate() + (isCurrentMonthCell ? '' : '');
+    cell.appendChild(dateDiv);
+    
+    // Find tasks for this date
+    const tasksForDay = filteredTasks.filter(task => task.deadline === dateStr);
+    
+    // Sort tasks by status or title if needed
+    tasksForDay.forEach(task => {
+      const taskEl = document.createElement('div');
+      taskEl.className = 'calendar-task';
+      taskEl.dataset.status = task.status;
+      taskEl.draggable = true;
+      taskEl.textContent = task.title;
+      taskEl.title = task.title;
+      
+      taskEl.addEventListener('click', (e) => {
+        e.stopPropagation();
+        openModal(task);
+      });
+      
+      taskEl.addEventListener('dragstart', (e) => {
+        e.dataTransfer.setData('text/plain', task.id);
+        taskEl.classList.add('dragging');
+      });
+      
+      taskEl.addEventListener('dragend', () => {
+        taskEl.classList.remove('dragging');
+      });
+      
+      cell.appendChild(taskEl);
+    });
+    
+    // Drag over calendar day
+    cell.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      cell.classList.add('drag-over');
+    });
+    
+    cell.addEventListener('dragleave', () => {
+      cell.classList.remove('drag-over');
+    });
+    
+    cell.addEventListener('drop', (e) => {
+      e.preventDefault();
+      cell.classList.remove('drag-over');
+      const taskId = e.dataTransfer.getData('text/plain');
+      const newDate = cell.dataset.date;
+      
+      if (taskId && newDate) {
+        const taskIndex = tasks.findIndex(t => t.id === taskId);
+        if (taskIndex !== -1 && tasks[taskIndex].deadline !== newDate) {
+          tasks[taskIndex].deadline = newDate;
+          tasks[taskIndex].updatedAt = new Date().toISOString();
+          renderCurrentView();
+          saveTasksToDrive();
+        }
+      }
+    });
+    
+    // Click on empty day to add task
+    cell.addEventListener('click', () => {
+      openModal();
+      document.getElementById('task-deadline').value = dateStr;
+      if (document.getElementById('task-deadline')._flatpickr) {
+        document.getElementById('task-deadline')._flatpickr.setDate(dateStr);
+      }
+    });
+    
+    calendarGrid.appendChild(cell);
   }
 }
 
