@@ -1,24 +1,26 @@
 # Project Context
 This is a general-purpose task management web application.
-The application features a Kanban board interface and a sortable/filterable Table (List) view to track tasks through various stages of production.
+The application features a Kanban board, Table (List) view, and Calendar view to track tasks through various stages of production.
 
 # Tech Stack
 - Build Tool: Vite
 - Frontend: Vanilla JavaScript, HTML5
 - Styling: Vanilla CSS (Custom styling, NO TailwindCSS)
 - Icons: Phosphor Icons (via CDN)
-- UI Components: Flatpickr (Calendar Datepicker for deadlines)
+- UI Components: Flatpickr (Calendar Datepicker for deadlines and delivery dates)
 - Authentication & Data Storage: Google Identity Services (OAuth2) & Google Drive REST API v3
 
 # Architecture & Features
 - **Client-Side Only**: The app runs entirely in the browser without a custom backend.
 - **Data Persistence**: Task data is stored directly in the user's Google Drive. The app creates an `ApplicationData` folder in the root drive and stores data in a `taskData` file inside it.
 - **Views**: 
-  - Kanban View: Visual board. Auto-hides "done" tasks older than 7 days to maintain performance.
+  - Kanban View: Visual board with responsive column widths. Auto-hides "done" tasks older than 7 days based on their `deliveredAt` (納品完了日) date.
   - Table View: List format with column-sorting and text/status filtering.
-- **Drag & Drop**: Native HTML5 Drag and Drop API is used for moving tasks across columns.
-- **Authentication**: Uses Google Identity Services (`google.accounts.oauth2.initTokenClient`) to obtain an access token.
-- **API Scope**: Requires `https://www.googleapis.com/auth/drive.file` scope to read/write the app-created JSON file.
+  - Calendar View: Monthly grid layout. Maps tasks to their `deadline`. Supports Drag & Drop to change deadlines.
+- **Drag & Drop**: Native HTML5 Drag and Drop API is used for moving tasks across columns or changing dates on the calendar.
+- **Authentication**: Uses Google Identity Services (`google.accounts.oauth2.initTokenClient`) to obtain an access token. Displays user's Google profile picture and name after login.
+- **API Scope**: Requires `https://www.googleapis.com/auth/drive.file` and `https://www.googleapis.com/auth/userinfo.profile`. 
+  - *Crucial*: Error handling specifically catches HTTP 403 on the Drive API to prompt users to re-authenticate if they failed to check the "Drive" permission checkbox during login.
 
 # Styling Rules & UI/UX
 - **Design Concept**: Professional, premium dark mode design that harmonizes with professional video editing software interfaces (e.g., Premiere Pro, DaVinci Resolve).
@@ -33,9 +35,9 @@ The application features a Kanban board interface and a sortable/filterable Tabl
   - `review` (確認待ち)
   - `revision` (修正対応中)
   - `done` (納品完了)
-- **Task Deadlines**: 
-  - Tasks must visually indicate proximity to deadlines using badges and colors (e.g., Warning if within 3 days, Danger if overdue). 
-  - Tasks in columns are automatically sorted by deadline ascending.
+- **Task Fields & Rules**: 
+  - Deadlines: Must visually indicate proximity to deadlines using badges/colors (Warning within 3 days, Danger if overdue). Sorted ascending by default.
+  - Delivered At (納品完了日): Automatically populated when a task is moved to `done`. Triggers calendar checkmarks and Kanban 7-day auto-hide logic.
 
 # Development Guidelines
 - Always use Vanilla CSS and JavaScript. Do not introduce frameworks like React or CSS libraries like TailwindCSS unless explicitly requested and justified.
