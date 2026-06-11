@@ -54,6 +54,18 @@ const btnNextMonth = document.getElementById('btn-next-month');
 
 // Initialize
 function init() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const isEmbedCalendar = urlParams.get('embed') === 'calendar';
+  if (isEmbedCalendar) {
+    currentView = 'calendar';
+    const header = document.querySelector('.app-header');
+    if (header) header.style.display = 'none';
+    const fab = document.getElementById('btn-add-task');
+    if (fab) fab.style.display = 'none';
+    const tb = document.getElementById('toolbar');
+    if (tb) tb.style.display = 'none';
+  }
+
   renderColumns();
   setupEventListeners();
   
@@ -104,13 +116,24 @@ function initGsi() {
       },
     });
     
-    // Check if token exists in session/local storage
-    const savedToken = sessionStorage.getItem('gapi_token');
-    if (savedToken) {
-      accessToken = savedToken;
+    // Check if token exists in URL or session/local storage
+    const params = new URLSearchParams(window.location.search);
+    const urlToken = params.get('token');
+    
+    if (urlToken) {
+      accessToken = urlToken;
+      sessionStorage.setItem('gapi_token', urlToken);
+      const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
+      window.history.replaceState({path: newUrl}, '', newUrl);
       onLoginSuccess();
     } else {
-      btnLogin.style.display = 'inline-flex';
+      const savedToken = sessionStorage.getItem('gapi_token');
+      if (savedToken) {
+        accessToken = savedToken;
+        onLoginSuccess();
+      } else {
+        btnLogin.style.display = 'inline-flex';
+      }
     }
   } catch (error) {
     console.error('Error initializing GSI:', error);
