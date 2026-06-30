@@ -14,7 +14,14 @@ let tasks = [];
 let userInfo = null;
 let currentView = 'kanban';
 let tableSort = { key: 'deadline', direction: 'asc' };
-let filterConfig = { text: '', status: 'all' };
+let filterConfig = { 
+  text: '', 
+  status: 'all',
+  hideDone: false,
+  deadlineFrom: '',
+  deadlineTo: '',
+  client: 'all'
+};
 let currentCalendarDate = new Date();
 let externalGoogleEvents = []; // Cache for Google Calendar events
 let lastFetchedMonth = null;
@@ -53,6 +60,15 @@ const calendarMonthYear = document.getElementById('calendar-month-year');
 const calendarGrid = document.getElementById('calendar-grid');
 const btnPrevMonth = document.getElementById('btn-prev-month');
 const btnNextMonth = document.getElementById('btn-next-month');
+
+// Advanced Filters
+const btnToggleAdvancedFilter = document.getElementById('btn-toggle-advanced-filter');
+const advancedFiltersPanel = document.getElementById('advanced-filters');
+const filterHideDone = document.getElementById('filter-hide-done');
+const filterDeadlineFrom = document.getElementById('filter-deadline-from');
+const filterDeadlineTo = document.getElementById('filter-deadline-to');
+const filterClient = document.getElementById('filter-client');
+const btnExportCsv = document.getElementById('btn-export-csv');
 
 // Initialize
 function init() {
@@ -513,6 +529,8 @@ function renderColumns() {
 }
 
 function renderCurrentView() {
+  populateClientDropdown();
+  
   boardContainer.style.display = 'none';
   tableContainer.style.display = 'none';
   calendarContainer.style.display = 'none';
@@ -537,7 +555,22 @@ function getFilteredTasks() {
       (task.client && task.client.toLowerCase().includes(text));
       
     const matchStatus = filterConfig.status === 'all' || task.status === filterConfig.status;
-    return matchText && matchStatus;
+    
+    const matchHideDone = !filterConfig.hideDone || task.status !== 'done';
+    
+    let matchDeadlineFrom = true;
+    let matchDeadlineTo = true;
+    if (filterConfig.deadlineFrom && task.deadline) {
+      matchDeadlineFrom = task.deadline >= filterConfig.deadlineFrom;
+    }
+    if (filterConfig.deadlineTo && task.deadline) {
+      matchDeadlineTo = task.deadline <= filterConfig.deadlineTo;
+    }
+    const matchDeadline = matchDeadlineFrom && matchDeadlineTo;
+    
+    const matchClient = filterConfig.client === 'all' || task.client === filterConfig.client;
+
+    return matchText && matchStatus && matchHideDone && matchDeadline && matchClient;
   });
 }
 
@@ -1029,6 +1062,56 @@ function setupEventListeners() {
       renderCalendar();
     });
   }
+  
+  if (btnToggleAdvancedFilter) {
+    btnToggleAdvancedFilter.addEventListener('click', () => {
+      if (advancedFiltersPanel.style.display === 'none') {
+        advancedFiltersPanel.style.display = 'flex';
+        btnToggleAdvancedFilter.classList.add('active');
+      } else {
+        advancedFiltersPanel.style.display = 'none';
+        btnToggleAdvancedFilter.classList.remove('active');
+      }
+    });
+  }
+  
+  if (filterHideDone) {
+    filterHideDone.addEventListener('change', (e) => {
+      filterConfig.hideDone = e.target.checked;
+      renderCurrentView();
+    });
+  }
+  
+  if (filterClient) {
+    filterClient.addEventListener('change', (e) => {
+      filterConfig.client = e.target.value;
+      renderCurrentView();
+    });
+  }
+  
+  if (btnExportCsv) {
+    btnExportCsv.addEventListener('click', exportToCSV);
+  }
+  
+  if (filterDeadlineFrom) {
+    flatpickr(filterDeadlineFrom, {
+      dateFormat: 'Y-m-d',
+      onChange: function(selectedDates, dateStr) {
+        filterConfig.deadlineFrom = dateStr;
+        renderCurrentView();
+      }
+    });
+  }
+  
+  if (filterDeadlineTo) {
+    flatpickr(filterDeadlineTo, {
+      dateFormat: 'Y-m-d',
+      onChange: function(selectedDates, dateStr) {
+        filterConfig.deadlineTo = dateStr;
+        renderCurrentView();
+      }
+    });
+  }
 }
 
 // Calendar Rendering & Logic
@@ -1180,6 +1263,71 @@ function renderCalendar() {
     
     calendarGrid.appendChild(cell);
   }
+}
+
+function populateClientDropdown() {
+  if (!filterClient) return;
+  const currentVal = filterClient.value;
+  
+  const clients = [...new Set(tasks.map(t => t.client).filter(c => c && c.trim() !== ''))].sort();
+  
+  filterClient.innerHTML = '<option value="all">すべて</option>';
+  clients.forEach(c => {
+    const opt = document.createElement('option');
+    opt.value = c;
+    opt.textContent = c;
+    filterClient.appendChild(opt);
+  });
+  
+  if (clients.includes(currentVal) || currentVal === 'all') {
+    filterClient.value = currentVal;
+  } else {
+    filterConfig.client = 'all';
+    filterClient.value = 'all';
+  }
+}
+
+function exportToCSV() {
+  const filtered = getFilteredTasks();
+  if (filtered.length === 0) {
+    showToast('エクスポートするデータがありません', 'error');
+    return;
+  }
+  
+  const headers = ['ステータス', '案件名/タイトル', 'クライアント', '納期', '納品完了日', '作成日'];
+  const statusMap = {
+    todo: '未着手',
+    rough: '初稿作成中',
+    review: '確認待ち',
+    revision: '修正対応中',
+    done: '納品完了'
+  };
+  
+  const rows = filtered.map(t => {
+    return [
+      statusMap[t.status] || t.status,
+      `"${(t.title || '').replace(/"/g, '""')}"`,
+      `"${(t.client || '').replace(/"/g, '""')}"`,
+      t.deadline || '',
+      t.deliveredAt || '',
+      new Date(t.createdAt).toLocaleDateString()
+    ].join(',');
+  });
+  
+  const csvContent = [headers.join(','), ...rows].join('\n');
+  const bom = new Uint8Array([0xEF, 0xBB, 0xBF]);
+  const blob = new Blob([bom, csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `tasks_${new Date().toISOString().split('T')[0]}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  
+  showToast('CSVをエクスポートしました');
 }
 
 // Start app

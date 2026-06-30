@@ -54,19 +54,51 @@
       </header>
       
       <div class="toolbar" id="toolbar" style="display: none;">
-        <div class="search-input-wrapper">
-          <i class="ph ph-magnifying-glass"></i>
-          <input type="text" id="filter-text" placeholder="タスク名やクライアントで検索...">
+        <div class="toolbar-main">
+          <div class="search-input-wrapper">
+            <i class="ph ph-magnifying-glass"></i>
+            <input type="text" id="filter-text" placeholder="タスク名やクライアントで検索...">
+          </div>
+          <div class="status-filter-wrapper">
+            <select id="filter-status">
+              <option value="all">すべてのステータス</option>
+              <option value="todo">未着手</option>
+              <option value="rough">初稿作成中</option>
+              <option value="review">確認待ち</option>
+              <option value="revision">修正対応中</option>
+              <option value="done">納品完了</option>
+            </select>
+          </div>
+          <button class="btn btn-secondary" id="btn-toggle-advanced-filter" title="詳細フィルター">
+            <i class="ph ph-faders"></i> 詳細
+          </button>
+          <div style="flex: 1;"></div>
+          <button class="btn btn-secondary" id="btn-export-csv" title="CSVエクスポート">
+            <i class="ph ph-download-simple"></i> CSV出力
+          </button>
         </div>
-        <div class="status-filter-wrapper">
-          <select id="filter-status">
-            <option value="all">すべてのステータス</option>
-            <option value="todo">未着手</option>
-            <option value="rough">初稿作成中</option>
-            <option value="review">確認待ち</option>
-            <option value="revision">修正対応中</option>
-            <option value="done">納品完了</option>
-          </select>
+        
+        <div class="advanced-filters" id="advanced-filters" style="display: none;">
+          <div class="filter-group checkbox-group">
+            <label class="checkbox-label">
+              <input type="checkbox" id="filter-hide-done">
+              <span class="checkbox-text">納品完了を非表示</span>
+            </label>
+          </div>
+          <div class="filter-group">
+            <label>納期</label>
+            <div class="date-range-inputs">
+              <input type="text" id="filter-deadline-from" placeholder="いつから">
+              <span>〜</span>
+              <input type="text" id="filter-deadline-to" placeholder="いつまで">
+            </div>
+          </div>
+          <div class="filter-group">
+            <label>クライアント</label>
+            <select id="filter-client">
+              <option value="all">すべて</option>
+            </select>
+          </div>
         </div>
       </div>
       

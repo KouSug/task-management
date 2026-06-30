@@ -674,9 +674,73 @@ select option {
 /* Toolbar & Filters */
 .toolbar {
   display: flex;
-  padding: 16px 24px 0;
+  flex-direction: column;
+  padding: 16px 24px;
+  background-color: var(--bg-panel);
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  gap: 16px;
+}
+
+.toolbar-main {
+  display: flex;
   gap: 16px;
   align-items: center;
+}
+
+.advanced-filters {
+  display: flex;
+  gap: 24px;
+  align-items: center;
+  padding-top: 16px;
+  border-top: 1px dashed rgba(255,255,255,0.1);
+  animation: fadeIn 0.2s ease-in-out;
+}
+
+.filter-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.filter-group label {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.filter-group select,
+.filter-group input[type="text"] {
+  background-color: var(--bg-base);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: var(--text-primary);
+  padding: 8px 12px;
+  border-radius: var(--radius-md);
+  outline: none;
+}
+
+.date-range-inputs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.date-range-inputs input {
+  width: 120px;
+}
+
+.checkbox-group .checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  color: var(--text-primary);
+  font-size: 0.9rem;
+}
+
+.checkbox-group input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--accent-primary);
+  cursor: pointer;
 }
 
 .search-input-wrapper {
