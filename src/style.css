@@ -875,3 +875,26 @@ select option {
   border-left-color: var(--status-done);
   background-color: rgba(16, 185, 129, 0.15);
 }
+
+/* External Google Calendar Events */
+.calendar-event-external {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: var(--text-secondary);
+  border-left: 3px solid #9ba3af;
+  font-size: 0.75rem;
+  padding: 4px 6px;
+  border-radius: 4px;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 2px;
+  transition: opacity 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.calendar-event-external:hover {
+  opacity: 0.8;
+}

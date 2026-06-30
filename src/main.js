@@ -16,6 +16,8 @@ let currentView = 'kanban';
 let tableSort = { key: 'deadline', direction: 'asc' };
 let filterConfig = { text: '', status: 'all' };
 let currentCalendarDate = new Date();
+let externalGoogleEvents = []; // Cache for Google Calendar events
+let lastFetchedMonth = null;
 
 // Columns definition
 const COLUMNS = [
@@ -432,6 +434,50 @@ async function deleteTaskFromCalendar(eventId) {
     });
   } catch (error) {
     console.error('Calendar Delete Error:', error);
+  }
+}
+
+async function fetchGoogleCalendarEvents(year, month) {
+  if (!accessToken) return;
+  
+  // Create ISO strings for start and end dates covering the visible grid
+  const timeMin = new Date(year, month - 1, 20).toISOString();
+  const timeMax = new Date(year, month + 1, 15).toISOString();
+  
+  try {
+    const res = await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${timeMin}&timeMax=${timeMax}&singleEvents=true&orderBy=startTime`, {
+      headers: { 'Authorization': `Bearer ${accessToken}` }
+    });
+    
+    if (res.ok) {
+      const data = await res.json();
+      
+      // Filter out tasks created by this app (they have googleCalendarEventId in our tasks array)
+      const appTaskIds = new Set(tasks.map(t => t.googleCalendarEventId).filter(Boolean));
+      
+      externalGoogleEvents = data.items
+        .filter(item => !appTaskIds.has(item.id))
+        .map(item => {
+          let dateStr = '';
+          if (item.start.date) {
+            dateStr = item.start.date;
+          } else if (item.start.dateTime) {
+            dateStr = item.start.dateTime.split('T')[0];
+          }
+          return {
+            id: item.id,
+            title: item.summary || '(タイトルなし)',
+            date: dateStr,
+            htmlLink: item.htmlLink
+          };
+        })
+        .filter(item => item.date);
+        
+    } else {
+      console.error('Failed to fetch external calendar events');
+    }
+  } catch (error) {
+    console.error('Calendar Fetch Error:', error);
   }
 }
 
@@ -1005,6 +1051,16 @@ function renderCalendar() {
   
   const filteredTasks = getFilteredTasks();
   
+  const currentMonthKey = `${year}-${month}`;
+  if (lastFetchedMonth !== currentMonthKey) {
+    lastFetchedMonth = currentMonthKey;
+    fetchGoogleCalendarEvents(year, month).then(() => {
+      if (currentView === 'calendar') {
+        renderCalendar();
+      }
+    });
+  }
+  
   // Total cells in a grid (usually 42 for a 6-week view)
   const totalCells = Math.ceil((firstDay + daysInMonth) / 7) * 7;
   
@@ -1069,6 +1125,22 @@ function renderCalendar() {
       });
       
       cell.appendChild(taskEl);
+    });
+    
+    // Render external Google Calendar events
+    const externalForDay = externalGoogleEvents.filter(e => e.date === dateStr);
+    externalForDay.forEach(e => {
+      const el = document.createElement('div');
+      el.className = 'calendar-event-external';
+      el.title = e.title;
+      el.innerHTML = `<i class="ph ph-calendar-blank"></i> ${escapeHtml(e.title)}`;
+      if (e.htmlLink) {
+        el.addEventListener('click', (ev) => {
+          ev.stopPropagation();
+          window.open(e.htmlLink, '_blank');
+        });
+      }
+      cell.appendChild(el);
     });
     
     // Drag over calendar day
