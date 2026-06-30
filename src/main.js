@@ -69,6 +69,7 @@ const filterDeadlineFrom = document.getElementById('filter-deadline-from');
 const filterDeadlineTo = document.getElementById('filter-deadline-to');
 const filterClient = document.getElementById('filter-client');
 const btnExportCsv = document.getElementById('btn-export-csv');
+const btnClearFilters = document.getElementById('btn-clear-filters');
 
 // Initialize
 function init() {
@@ -1091,6 +1092,30 @@ function setupEventListeners() {
   
   if (btnExportCsv) {
     btnExportCsv.addEventListener('click', exportToCSV);
+  }
+  
+  if (btnClearFilters) {
+    btnClearFilters.addEventListener('click', () => {
+      // DOM reset
+      if (filterText) filterText.value = '';
+      if (filterStatus) filterStatus.value = 'all';
+      if (filterHideDone) filterHideDone.checked = false;
+      if (filterClient) filterClient.value = 'all';
+      if (filterDeadlineFrom && filterDeadlineFrom._flatpickr) filterDeadlineFrom._flatpickr.clear();
+      if (filterDeadlineTo && filterDeadlineTo._flatpickr) filterDeadlineTo._flatpickr.clear();
+      
+      // State reset
+      filterConfig = {
+        text: '',
+        status: 'all',
+        hideDone: false,
+        deadlineFrom: '',
+        deadlineTo: '',
+        client: 'all'
+      };
+      
+      renderCurrentView();
+    });
   }
   
   if (filterDeadlineFrom) {
