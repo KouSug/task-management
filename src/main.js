@@ -367,11 +367,19 @@ async function syncTaskToCalendar(task) {
   if (task.link) description += `リンク: ${task.link}\n`;
   if (task.notes) description += `\n備考:\n${task.notes}`;
   
+  let colorId = '9'; // Default: Blueberry
+  if (task.status === 'todo') colorId = '8'; // Graphite
+  else if (task.status === 'rough') colorId = '5'; // Banana
+  else if (task.status === 'review') colorId = '4'; // Flamingo
+  else if (task.status === 'revision') colorId = '6'; // Tangerine
+  else if (task.status === 'done') colorId = '10'; // Basil
+  
   const event = {
     summary: task.title,
     description: description.trim(),
     start: { date: task.deadline },
-    end: { date: getNextDay(task.deadline) }
+    end: { date: getNextDay(task.deadline) },
+    colorId: colorId
   };
   
   try {
@@ -753,7 +761,7 @@ function setupDragAndDrop() {
       list.classList.remove('drag-over');
     });
     
-    list.addEventListener('drop', (e) => {
+    list.addEventListener('drop', async (e) => {
       e.preventDefault();
       list.classList.remove('drag-over');
       
@@ -761,13 +769,13 @@ function setupDragAndDrop() {
       const newStatus = list.dataset.status;
       
       if (taskId && newStatus) {
-        moveTask(taskId, newStatus);
+        await moveTask(taskId, newStatus);
       }
     });
   });
 }
 
-function moveTask(taskId, newStatus) {
+async function moveTask(taskId, newStatus) {
   const taskIndex = tasks.findIndex(t => t.id === taskId);
   if (taskIndex !== -1 && tasks[taskIndex].status !== newStatus) {
     tasks[taskIndex].status = newStatus;
@@ -778,6 +786,9 @@ function moveTask(taskId, newStatus) {
     }
     
     tasks[taskIndex].updatedAt = new Date().toISOString();
+    
+    await syncTaskToCalendar(tasks[taskIndex]);
+    
     renderCurrentView();
     saveTasksToDrive();
   }
