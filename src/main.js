@@ -195,7 +195,6 @@ async function onLoginSuccess() {
     console.error('Failed to fetch user profile:', err);
   }
   
-  showToast('ログインしました。データを同期中...');
   await syncWithDrive();
 }
 
@@ -294,7 +293,6 @@ async function loadTasksFromDrive() {
         tasks = [];
       }
       renderCurrentView();
-      showToast('データを読み込みました');
     }
   } catch (error) {
     console.error('Load Error:', error);
