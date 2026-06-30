@@ -18,9 +18,14 @@ The application features a Kanban board, Table (List) view, and Calendar view to
   - Table View: List format with column-sorting and text/status filtering.
   - Calendar View: Monthly grid layout. Maps tasks to their `deadline`. Supports Drag & Drop to change deadlines.
 - **Drag & Drop**: Native HTML5 Drag and Drop API is used for moving tasks across columns or changing dates on the calendar.
-- **Authentication**: Uses Google Identity Services (`google.accounts.oauth2.initTokenClient`) to obtain an access token. Displays user's Google profile picture and name after login.
-- **API Scope**: Requires `https://www.googleapis.com/auth/drive.file` and `https://www.googleapis.com/auth/userinfo.profile`. 
+- **Authentication & APIs**: Uses Google Identity Services (`google.accounts.oauth2.initTokenClient`) to obtain an access token. Displays user's Google profile picture and name after login.
+- **API Scopes**: Requires `https://www.googleapis.com/auth/drive.file`, `https://www.googleapis.com/auth/userinfo.profile`, and `https://www.googleapis.com/auth/calendar.events`. 
   - *Crucial*: Error handling specifically catches HTTP 403 on the Drive API to prompt users to re-authenticate if they failed to check the "Drive" permission checkbox during login.
+- **Google Calendar Sync**:
+  - One-way sync (App -> Google Calendar).
+  - When a task is created, updated, or its deadline is modified (via modal or Drag & Drop), the task is synced to the user's primary Google Calendar as an all-day event (`syncTaskToCalendar`).
+  - Stores the Google Calendar Event ID in the task JSON (`googleCalendarEventId`).
+  - Tasks without a deadline, or deleted tasks, have their events deleted from Google Calendar.
 
 # Styling Rules & UI/UX
 - **Design Concept**: Professional, premium dark mode design that harmonizes with professional video editing software interfaces (e.g., Premiere Pro, DaVinci Resolve).

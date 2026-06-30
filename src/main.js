@@ -2,7 +2,7 @@ import './style.css'
 
 // Configuration
 const CLIENT_ID = '797019706991-apjivfitf1u4pbfccaff5f8b331im9au.apps.googleusercontent.com';
-const SCOPES = 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/userinfo.profile';
+const SCOPES = 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/calendar.events';
 const FOLDER_NAME = 'ApplicationData';
 const FILE_NAME = 'taskData';
 
@@ -273,6 +273,20 @@ async function loadTasksFromDrive() {
       try {
         const data = text ? JSON.parse(text) : [];
         tasks = Array.isArray(data) ? data : [];
+        
+        // Auto-sync existing tasks to calendar
+        let needsSave = false;
+        for (const task of tasks) {
+          if (task.deadline && !task.googleCalendarEventId) {
+            await syncTaskToCalendar(task);
+            if (task.googleCalendarEventId) {
+              needsSave = true;
+            }
+          }
+        }
+        if (needsSave) {
+          saveTasksToDrive();
+        }
       } catch (e) {
         console.error('Invalid JSON:', e);
         tasks = [];
@@ -333,6 +347,94 @@ async function saveTasksToDrive() {
     console.error('Save Error:', error);
     showToast('保存に失敗しました', 'error');
   }
+}
+
+// --- Google Calendar API Integration ---
+
+async function syncTaskToCalendar(task) {
+  if (!accessToken) return;
+  
+  if (!task.deadline) {
+    if (task.googleCalendarEventId) {
+      await deleteTaskFromCalendar(task.googleCalendarEventId);
+      delete task.googleCalendarEventId;
+    }
+    return;
+  }
+  
+  let description = '';
+  if (task.client) description += `クライアント: ${task.client}\n`;
+  if (task.link) description += `リンク: ${task.link}\n`;
+  if (task.notes) description += `\n備考:\n${task.notes}`;
+  
+  const event = {
+    summary: task.title,
+    description: description.trim(),
+    start: { date: task.deadline },
+    end: { date: getNextDay(task.deadline) }
+  };
+  
+  try {
+    if (task.googleCalendarEventId) {
+      const res = await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events/${task.googleCalendarEventId}`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(event)
+      });
+      
+      if (!res.ok) {
+        if (res.status === 404 || res.status === 403) {
+          delete task.googleCalendarEventId;
+          await syncTaskToCalendar(task);
+        } else {
+          console.error('Failed to update calendar event');
+        }
+      }
+    } else {
+      const res = await fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(event)
+      });
+      
+      if (res.ok) {
+        const data = await res.json();
+        task.googleCalendarEventId = data.id;
+      } else {
+        console.error('Failed to create calendar event');
+      }
+    }
+  } catch (error) {
+    console.error('Calendar Sync Error:', error);
+  }
+}
+
+async function deleteTaskFromCalendar(eventId) {
+  if (!accessToken || !eventId) return;
+  try {
+    await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events/${eventId}`, {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${accessToken}` }
+    });
+  } catch (error) {
+    console.error('Calendar Delete Error:', error);
+  }
+}
+
+function getNextDay(dateString) {
+  const parts = dateString.split('-');
+  const date = new Date(parts[0], parts[1] - 1, parts[2]);
+  date.setDate(date.getDate() + 1);
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
 }
 
 // UI Rendering
@@ -716,8 +818,7 @@ function closeModal() {
   taskForm.reset();
 }
 
-// Form Submission
-function handleTaskSubmit(e) {
+async function handleTaskSubmit(e) {
   e.preventDefault();
   
   const id = document.getElementById('task-id').value;
@@ -735,20 +836,29 @@ function handleTaskSubmit(e) {
   
   if (id) {
     const index = tasks.findIndex(t => t.id === id);
-    if (index !== -1) tasks[index] = task;
+    if (index !== -1) {
+      task.googleCalendarEventId = tasks[index].googleCalendarEventId;
+      tasks[index] = task;
+    }
   } else {
     task.createdAt = new Date().toISOString();
     tasks.push(task);
   }
+  
+  await syncTaskToCalendar(task);
   
   closeModal();
   renderCurrentView();
   saveTasksToDrive();
 }
 
-function handleDeleteTask() {
+async function handleDeleteTask() {
   const id = document.getElementById('task-id').value;
   if (id && confirm('このタスクを削除してもよろしいですか？')) {
+    const taskToDelete = tasks.find(t => t.id === id);
+    if (taskToDelete && taskToDelete.googleCalendarEventId) {
+      await deleteTaskFromCalendar(taskToDelete.googleCalendarEventId);
+    }
     tasks = tasks.filter(t => t.id !== id);
     closeModal();
     renderCurrentView();
@@ -960,7 +1070,7 @@ function renderCalendar() {
       cell.classList.remove('drag-over');
     });
     
-    cell.addEventListener('drop', (e) => {
+    cell.addEventListener('drop', async (e) => {
       e.preventDefault();
       cell.classList.remove('drag-over');
       const taskId = e.dataTransfer.getData('text/plain');
@@ -971,6 +1081,7 @@ function renderCalendar() {
         if (taskIndex !== -1 && tasks[taskIndex].deadline !== newDate) {
           tasks[taskIndex].deadline = newDate;
           tasks[taskIndex].updatedAt = new Date().toISOString();
+          await syncTaskToCalendar(tasks[taskIndex]);
           renderCurrentView();
           saveTasksToDrive();
         }
