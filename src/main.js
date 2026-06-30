@@ -83,6 +83,12 @@ function init() {
     if (fab) fab.style.display = 'none';
     const tb = document.getElementById('toolbar');
     if (tb) tb.style.display = 'none';
+    
+    // Prevent Kanban flash on load
+    const bc = document.getElementById('board-container');
+    if (bc) bc.style.display = 'none';
+    const cc = document.getElementById('calendar-container');
+    if (cc) cc.style.display = 'flex';
   }
 
   renderColumns();
