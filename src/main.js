@@ -146,7 +146,7 @@ function initGsi() {
 // Authentication handlers
 function handleLogin() {
   if (tokenClient) {
-    tokenClient.requestAccessToken({prompt: 'consent'});
+    tokenClient.requestAccessToken();
   }
 }
 
