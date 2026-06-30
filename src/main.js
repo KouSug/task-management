@@ -367,12 +367,12 @@ async function syncTaskToCalendar(task) {
   if (task.link) description += `リンク: ${task.link}\n`;
   if (task.notes) description += `\n備考:\n${task.notes}`;
   
-  let colorId = '9'; // Default: Blueberry
-  if (task.status === 'todo') colorId = '8'; // Graphite
-  else if (task.status === 'rough') colorId = '5'; // Banana
-  else if (task.status === 'review') colorId = '4'; // Flamingo
-  else if (task.status === 'revision') colorId = '6'; // Tangerine
-  else if (task.status === 'done') colorId = '10'; // Basil
+  let colorId = '9'; // Default: Blueberry (Blue)
+  if (task.status === 'todo') colorId = '8'; // Graphite (Gray)
+  else if (task.status === 'rough') colorId = '6'; // Tangerine (Orange/Yellow)
+  else if (task.status === 'review') colorId = '9'; // Blueberry (Blue)
+  else if (task.status === 'revision') colorId = '4'; // Flamingo (Pink)
+  else if (task.status === 'done') colorId = '10'; // Basil (Green)
   
   const event = {
     summary: task.title,
