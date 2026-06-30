@@ -372,7 +372,7 @@ async function syncTaskToCalendar(task) {
   else if (task.status === 'rough') colorId = '6'; // Tangerine (Orange/Yellow)
   else if (task.status === 'review') colorId = '9'; // Blueberry (Blue)
   else if (task.status === 'revision') colorId = '4'; // Flamingo (Pink)
-  else if (task.status === 'done') colorId = '10'; // Basil (Green)
+  else if (task.status === 'done') colorId = '2'; // Sage (Light Green)
   
   const event = {
     summary: task.title,
