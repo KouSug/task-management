@@ -234,6 +234,7 @@ async function syncWithDrive() {
       if (!folderSearchRes.ok) {
         if (folderSearchRes.status === 401 || folderSearchRes.status === 403) {
           handleLogout();
+          window.parent.postMessage('token_expired', '*');
           showToast('Google Driveのアクセス権限がありません。再度ログインし、Driveへのアクセスを許可してください。', 'error');
           return;
         }
