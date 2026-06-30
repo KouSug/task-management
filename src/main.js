@@ -1374,7 +1374,6 @@ function exportToCSV() {
 async function checkAndSyncToCashManagement(task) {
   if (task.status === 'done' && !task.cashRegistered && task.amount > 0) {
     try {
-      showToast('資金管理アプリと連携中...', 'success');
       const success = await syncToCashManagement(task);
       if (success) {
         task.cashRegistered = true;
