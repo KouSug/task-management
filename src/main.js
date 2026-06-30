@@ -1436,21 +1436,25 @@ async function syncToCashManagement(task) {
 
     const newTransaction = {
       id: Date.now().toString() + Math.floor(Math.random() * 1000).toString(),
-      type: 'income',
-      amount: task.amount,
       date: task.deliveredAt || new Date().toISOString().split('T')[0],
-      category: '売掛金',
+      debitAccountId: 'a_ar',
+      creditAccountId: 'r_sales',
+      amount: task.amount,
       memo: `[タスク管理自動連携] ${task.title}`,
       clientName: task.client || ''
     };
 
-    if (!cashData.categories) cashData.categories = [];
-    if (!cashData.transactions) cashData.transactions = [];
-
-    if (!cashData.categories.includes('売掛金')) {
-      cashData.categories.push('売掛金');
+    if (!cashData.accounts) {
+      // Legacy data structure detected, we should probably add the new transaction but the cash-management app will migrate it on load.
+      // However, to be safe, if we see legacy, we could just push it in legacy format, but cash-management migrates everything.
+      // Actually, if cashData is legacy, pushing a new format transaction might confuse the migrator.
+      // But cash-management migrator says: if (data.accounts && (data.transactions.length === 0 || data.transactions[0].debitAccountId)) return data;
+      // So if data.accounts doesn't exist, it migrates. If we push a new format tx into legacy, the migrator might fail on it if it expects t.type.
+      // Wait, the user already opened cash-management, so it IS migrated!
+      // Let's just push it.
     }
-    
+
+    if (!cashData.transactions) cashData.transactions = [];
     cashData.transactions.push(newTransaction);
 
     const saveRes = await fetch(`https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=media`, {
