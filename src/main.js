@@ -682,6 +682,7 @@ function createTaskElement(task) {
   el.innerHTML = `
     <div class="task-title">${escapeHtml(task.title)}</div>
     ${task.client ? `<div class="task-client"><i class="ph ph-user"></i> ${escapeHtml(task.client)}</div>` : ''}
+    ${task.amount ? `<div class="task-client" style="color: var(--status-todo); margin-top: 4px;"><i class="ph ph-currency-jpy"></i> ${task.amount.toLocaleString()}</div>` : ''}
     <div class="task-meta">
       ${dateHtml}
       <div class="task-links">
@@ -817,7 +818,10 @@ function renderTable() {
       <td>
         <div class="table-title">${escapeHtml(task.title)}</div>
       </td>
-      <td>${task.client ? `<div class="table-client">${escapeHtml(task.client)}</div>` : '-'}</td>
+      <td>
+        ${task.client ? `<div class="table-client">${escapeHtml(task.client)}</div>` : '-'}
+        ${task.amount ? `<div class="table-client" style="color: var(--status-todo); font-size: 0.85em; margin-top: 4px;"><i class="ph ph-currency-jpy"></i> ${task.amount.toLocaleString()}</div>` : ''}
+      </td>
       <td>${deadlineHtml}</td>
       <td>${deliveredHtml}</td>
       <td>
@@ -873,6 +877,7 @@ async function moveTask(taskId, newStatus) {
     tasks[taskIndex].updatedAt = new Date().toISOString();
     
     await syncTaskToCalendar(tasks[taskIndex]);
+    await checkAndSyncToCashManagement(tasks[taskIndex]);
     
     renderCurrentView();
     saveTasksToDrive();
@@ -884,6 +889,7 @@ function openModal(task = null) {
   document.getElementById('task-id').value = task ? task.id : '';
   document.getElementById('task-title').value = task ? task.title : '';
   document.getElementById('task-client').value = task ? (task.client || '') : '';
+  document.getElementById('task-amount').value = task && task.amount ? task.amount : '';
   
   const deadlineInput = document.getElementById('task-deadline');
   const deadlineValue = task ? (task.deadline || '') : '';
@@ -927,6 +933,8 @@ async function handleTaskSubmit(e) {
     status: document.getElementById('task-status').value,
     link: document.getElementById('task-link').value,
     notes: document.getElementById('task-notes').value,
+    amount: document.getElementById('task-amount').value ? parseInt(document.getElementById('task-amount').value, 10) : 0,
+    cashRegistered: id ? (tasks.find(t => t.id === id)?.cashRegistered || false) : false,
     updatedAt: new Date().toISOString()
   };
   
@@ -942,6 +950,7 @@ async function handleTaskSubmit(e) {
   }
   
   await syncTaskToCalendar(task);
+  await checkAndSyncToCashManagement(task);
   
   closeModal();
   renderCurrentView();
@@ -1360,6 +1369,105 @@ function exportToCSV() {
   URL.revokeObjectURL(url);
   
   showToast('CSVをエクスポートしました');
+}
+
+async function checkAndSyncToCashManagement(task) {
+  if (task.status === 'done' && !task.cashRegistered && task.amount > 0) {
+    try {
+      showToast('資金管理アプリと連携中...', 'success');
+      const success = await syncToCashManagement(task);
+      if (success) {
+        task.cashRegistered = true;
+        showToast('資金管理に売掛金を登録しました', 'success');
+      } else {
+        showToast('資金管理への登録に失敗しました', 'error');
+      }
+    } catch (e) {
+      console.error(e);
+      showToast('資金管理への登録エラー', 'error');
+    }
+  }
+}
+
+async function syncToCashManagement(task) {
+  if (!accessToken) return false;
+  
+  try {
+    let folderId = null;
+    const folderSearchRes = await fetch(`https://www.googleapis.com/drive/v3/files?q=name='ApplicationData' and mimeType='application/vnd.google-apps.folder' and trashed=false&spaces=drive`, {
+      headers: { 'Authorization': `Bearer ${accessToken}` }
+    });
+    const folderData = await folderSearchRes.json();
+    if (folderData.files && folderData.files.length > 0) {
+      folderId = folderData.files[0].id;
+    } else {
+      return false; // Error finding folder
+    }
+
+    let fileId = null;
+    const searchRes = await fetch(`https://www.googleapis.com/drive/v3/files?q=name='cashflowData.json' and '${folderId}' in parents and trashed=false&spaces=drive`, {
+      headers: { 'Authorization': `Bearer ${accessToken}` }
+    });
+    const searchData = await searchRes.json();
+    if (searchData.files && searchData.files.length > 0) {
+      fileId = searchData.files[0].id;
+    } else {
+      const createRes = await fetch('https://www.googleapis.com/drive/v3/files', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ name: 'cashflowData.json', parents: [folderId] })
+      });
+      const createData = await createRes.json();
+      fileId = createData.id;
+    }
+
+    let cashData = { transactions: [], categories: [] };
+    if (searchData.files && searchData.files.length > 0) {
+      const contentRes = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, {
+        headers: { 'Authorization': `Bearer ${accessToken}` }
+      });
+      if (contentRes.ok) {
+        const text = await contentRes.text();
+        if (text) cashData = JSON.parse(text);
+      }
+    }
+
+    const newTransaction = {
+      id: Date.now().toString() + Math.floor(Math.random() * 1000).toString(),
+      type: 'income',
+      amount: task.amount,
+      date: task.deliveredAt || new Date().toISOString().split('T')[0],
+      category: '売掛金',
+      memo: `[タスク管理自動連携] ${task.title}`,
+      clientName: task.client || ''
+    };
+
+    if (!cashData.categories) cashData.categories = [];
+    if (!cashData.transactions) cashData.transactions = [];
+
+    if (!cashData.categories.includes('売掛金')) {
+      cashData.categories.push('売掛金');
+    }
+    
+    cashData.transactions.push(newTransaction);
+
+    const saveRes = await fetch(`https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=media`, {
+      method: 'PATCH',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(cashData)
+    });
+    
+    return saveRes.ok;
+  } catch (error) {
+    console.error('Cash Management Sync Error:', error);
+    return false;
+  }
 }
 
 // Start app
